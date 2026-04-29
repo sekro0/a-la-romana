@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { calcSettlements } from '../lib/settlements'
-import { fmt, genInviteCode } from '../lib/utils'
+import { fmt, genInviteCode, AVATAR_COLORS } from '../lib/utils'
 import Avatar from '../components/Avatar'
+import ConfirmModal from '../components/ConfirmModal'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
 import { ThemeToggle } from '../lib/theme'
@@ -467,61 +468,120 @@ function GroupCard({ group, userId, onSelect, isPinned, onTogglePin, archived })
 // ─── Profile Modal ────────────────────────────────────────────────────────────
 
 function ProfileModal({ open, onClose, user }) {
+  const [name, setName]   = useState(user?.display_name || '')
+  const [color, setColor] = useState(user?.avatar_color || AVATAR_COLORS[0])
   const [alias, setAlias] = useState(user?.payment_alias || '')
   const [saving, setSaving] = useState(false)
+  const [logoutConfirm, setLogoutConfirm] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setName(user?.display_name || '')
+      setColor(user?.avatar_color || AVATAR_COLORS[0])
+      setAlias(user?.payment_alias || '')
+    }
+  }, [open])
 
   const save = async () => {
+    if (!name.trim()) { toast.error('El nombre no puede estar vacío'); return }
     setSaving(true)
-    const { error } = await supabase.from('profiles').update({ payment_alias: alias.trim() || null }).eq('id', user.id)
+    const { error } = await supabase.from('profiles').update({
+      display_name: name.trim(),
+      avatar_color: color,
+      payment_alias: alias.trim() || null,
+    }).eq('id', user.id)
     setSaving(false)
     if (error) { toast.error('No se pudo guardar'); return }
     toast.success('Perfil actualizado')
     onClose()
+    setTimeout(() => window.location.reload(), 400)
+  }
+
+  const doLogout = () => {
+    localStorage.removeItem('splitya_user_id')
+    window.location.reload()
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Mi perfil" subtitle="Configurá tu información de pago">
-      <div className="space-y-5">
-        <div className="flex items-center gap-3 p-3 bg-stone-50 dark:bg-stone-800 rounded-2xl">
-          <Avatar name={user?.display_name} color={user?.avatar_color} />
+    <>
+      <Modal open={open} onClose={onClose} title="Mi perfil" subtitle="Editá tu nombre, color y alias de pago">
+        <div className="space-y-5">
+          <div className="flex items-center gap-3 p-3 bg-stone-50 dark:bg-stone-800 rounded-2xl">
+            <Avatar name={name || user?.display_name} color={color} />
+            <div>
+              <p className="font-medium text-stone-950 dark:text-stone-50 tracking-tight">{name || user?.display_name}</p>
+              <p className="text-xs text-stone-500 dark:text-stone-400">Vista previa</p>
+            </div>
+          </div>
+
           <div>
-            <p className="font-medium text-stone-950 dark:text-stone-50 tracking-tight">{user?.display_name}</p>
-            <p className="text-xs text-stone-500 dark:text-stone-400">Tu perfil en a la romana</p>
+            <label className="block text-xs uppercase tracking-wider font-medium text-stone-500 dark:text-stone-400 mb-2">Nombre</label>
+            <input
+              className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl px-4 py-3 text-stone-950 dark:text-stone-50 font-medium focus:border-stone-950 dark:focus:border-stone-400 focus:bg-white dark:focus:bg-stone-700 transition-colors"
+              placeholder="Cómo te dicen tus amigos"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              maxLength={30}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase tracking-wider font-medium text-stone-500 dark:text-stone-400 mb-2">Color</label>
+            <div className="flex flex-wrap gap-2">
+              {AVATAR_COLORS.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className={`w-8 h-8 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-stone-950 dark:ring-stone-50 dark:ring-offset-stone-900 scale-110' : 'hover:scale-105'}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase tracking-wider font-medium text-stone-500 dark:text-stone-400 mb-2">
+              Alias Mercado Pago (opcional)
+            </label>
+            <input
+              className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl px-4 py-3 text-stone-950 dark:text-stone-50 font-medium focus:border-stone-950 dark:focus:border-stone-400 focus:bg-white dark:focus:bg-stone-700 transition-colors"
+              placeholder="nombre.apellido"
+              value={alias}
+              onChange={e => setAlias(e.target.value)}
+              type="text"
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={onClose} className="flex-1 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 font-medium hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">Cancelar</button>
+            <button onClick={save} disabled={saving} className="flex-1 py-3 rounded-2xl bg-brick-600 dark:bg-brick-500 text-white font-medium hover:bg-brick-700 dark:hover:bg-brick-600 active:scale-[0.99] transition-all disabled:opacity-30">
+              {saving ? 'Guardando…' : 'Guardar'}
+            </button>
+          </div>
+
+          <div className="border-t border-stone-100 dark:border-stone-800 pt-4">
+            <button
+              onClick={() => setLogoutConfirm(true)}
+              className="w-full text-xs text-stone-400 dark:text-stone-500 hover:text-red-600 dark:hover:text-red-400 transition-colors py-1"
+            >
+              Cerrar sesión
+            </button>
           </div>
         </div>
-        <div>
-          <label className="block text-xs uppercase tracking-wider font-medium text-stone-500 dark:text-stone-400 mb-2">
-            Alias de Mercado Pago (opcional)
-          </label>
-          <input
-            className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl px-4 py-3 text-stone-950 dark:text-stone-50 font-medium focus:border-stone-950 dark:focus:border-stone-400 focus:bg-white dark:focus:bg-stone-700 transition-colors"
-            placeholder="nombre.apellido"
-            value={alias}
-            onChange={e => setAlias(e.target.value)}
-            type="text"
-            autoCapitalize="none"
-            autoCorrect="off"
-          />
-          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">
-            Tu alias de MP (ej: nombre.apellido). Tus amigos podrán transferirte gratis sin comisión.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 font-medium hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">Cancelar</button>
-          <button onClick={save} disabled={saving} className="flex-1 py-3 rounded-2xl bg-brick-600 dark:bg-brick-500 text-white font-medium hover:bg-brick-700 dark:hover:bg-brick-600 active:scale-[0.99] transition-all disabled:opacity-30">
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button>
-        </div>
-        <div className="border-t border-stone-100 dark:border-stone-800 pt-4">
-          <button
-            onClick={() => { if (confirm('¿Cerrar sesión en este dispositivo?')) { localStorage.removeItem('splitya_user_id'); window.location.reload() } }}
-            className="w-full text-xs text-stone-400 dark:text-stone-500 hover:text-red-600 dark:hover:text-red-400 transition-colors py-1"
-          >
-            Cerrar sesión
-          </button>
-        </div>
-      </div>
-    </Modal>
+      </Modal>
+
+      <ConfirmModal
+        open={logoutConfirm}
+        title="Cerrar sesión"
+        message="Tu perfil quedará guardado en este dispositivo. Podés volver a entrar con el mismo nombre."
+        confirmLabel="Cerrar sesión"
+        danger
+        onConfirm={doLogout}
+        onCancel={() => setLogoutConfirm(false)}
+      />
+    </>
   )
 }
 
