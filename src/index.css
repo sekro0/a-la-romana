@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #faf8f3;
+  --surface: #ffffff;
+  --ink-950: #0c0a09;
+  --ink-700: #44403c;
+  --ink-500: #78716c;
+  --ink-300: #d6d3d1;
+  --ink-100: #f5f5f4;
+  --accent: #b54f2e;
+  --accent-hover: #9c4224;
+}
+
+.dark {
+  --bg: #130f0c;
+  --surface: #1e1610;
+  --ink-950: #faf8f3;
+  --ink-700: #d6d3d1;
+  --ink-500: #a8a29e;
+  --ink-300: #44403c;
+  --ink-100: #2a2118;
+  --accent: #c96040;
+  --accent-hover: #b54f2e;
+}
+
+.dark body {
+  background: var(--bg);
+  color: var(--ink-950);
+}
+
+.dark .skel {
+  background: linear-gradient(90deg, #1e1610 0%, #2a2118 50%, #1e1610 100%);
+  background-size: 200% 100%;
+}
+
+.dark ::-webkit-scrollbar-thumb { background: rgba(250, 250, 249, 0.1); }
+.dark ::-webkit-scrollbar-thumb:hover { background: rgba(250, 250, 249, 0.18); }
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--bg);
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  color: var(--ink-950);
+  margin: 0;
+  overscroll-behavior: none;
+  letter-spacing: -0.011em;
+}
+
+/* Tabular numbers everywhere money appears */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+input, button, textarea, select {
+  font-family: inherit;
+  letter-spacing: inherit;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(12, 10, 9, 0.12); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(12, 10, 9, 0.22); }
+
+/* Subtle grain texture for hero/dark surfaces */
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+.grain::after {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  z-index: -1;
+}
+
+/* Skeleton shimmer */
+.skel {
+  background: linear-gradient(90deg, #f5f5f4 0%, #e7e5e4 50%, #f5f5f4 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Refined focus rings */
+*:focus { outline: none; }
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink-950);
+}
+
+/* Hide native arrow on details */
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+
+/* Number animation */
+.tnum-anim {
+  transition: color 0.18s ease;
+}
+
+/* Selection */
+::selection { background: var(--accent); color: white; }
+
+/* ── Staggered entry animations ─────────────────────────────────────────── */
+.anim-up   { animation: slideUp 0.65s cubic-bezier(0.32, 0.72, 0, 1) both; }
+.anim-up-1 { animation: slideUp 0.65s cubic-bezier(0.32, 0.72, 0, 1) 0.07s  both; }
+.anim-up-2 { animation: slideUp 0.65s cubic-bezier(0.32, 0.72, 0, 1) 0.14s  both; }
+.anim-up-3 { animation: slideUp 0.65s cubic-bezier(0.32, 0.72, 0, 1) 0.21s  both; }
+.anim-up-4 { animation: slideUp 0.65s cubic-bezier(0.32, 0.72, 0, 1) 0.28s  both; }
+.anim-up-5 { animation: slideUp 0.65s cubic-bezier(0.32, 0.72, 0, 1) 0.35s  both; }
+
+/* CSS cascade stagger for lists via --i custom property */
+.stagger-item { animation: slideUp 0.55s cubic-bezier(0.32, 0.72, 0, 1) calc(var(--i, 0) * 60ms) both; }
+
+/* Grain overlay — fixed, pointer-events-none, never on scrolling containers */
+.grain-fixed::before {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  z-index: 9999;
+}

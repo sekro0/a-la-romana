@@ -1,0 +1,25 @@
+{
+  "name": "a la romana",
+  "short_name": "a la romana",
+  "description": "Para dividir la cuenta, sin peleas.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#130f0c",
+  "theme_color": "#b54f2e",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
