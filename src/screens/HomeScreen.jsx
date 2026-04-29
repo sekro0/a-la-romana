@@ -22,6 +22,28 @@ export default function HomeScreen({ user, onSelectGroup, pendingJoin, onClearPe
     try { return new Set(JSON.parse(localStorage.getItem('splitya_pinned') || '[]')) }
     catch { return new Set() }
   })
+  const [installPrompt, setInstallPrompt] = useState(null)
+  const [installDismissed, setInstallDismissed] = useState(
+    () => localStorage.getItem('splitya_install_dismissed') === '1'
+  )
+
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e) }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstall = async () => {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === 'accepted') setInstallPrompt(null)
+  }
+
+  const dismissInstall = () => {
+    setInstallDismissed(true)
+    localStorage.setItem('splitya_install_dismissed', '1')
+  }
 
   useEffect(() => { fetchGroups() }, [])
 
@@ -135,6 +157,35 @@ export default function HomeScreen({ user, onSelectGroup, pendingJoin, onClearPe
       </header>
 
       <div className="px-5 max-w-2xl mx-auto pb-12">
+        {installPrompt && !installDismissed && (
+          <div className="flex items-center gap-3 mb-4 px-4 py-3 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 anim-up-1">
+            <div className="w-8 h-8 rounded-xl bg-brick-600 flex items-center justify-center flex-shrink-0">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="5.5" stroke="white" strokeWidth="1.6"/>
+                <line x1="7" y1="1.5" x2="7" y2="12.5" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-stone-950 dark:text-stone-50 tracking-tight">Instalá la app</p>
+              <p className="text-xs text-stone-500 dark:text-stone-400">Accedé rápido desde tu pantalla de inicio</p>
+            </div>
+            <button
+              onClick={handleInstall}
+              className="px-3 py-1.5 rounded-xl bg-brick-600 dark:bg-brick-500 text-white text-xs font-medium hover:bg-brick-700 dark:hover:bg-brick-600 active:scale-[0.97] transition-all flex-shrink-0"
+            >
+              Instalar
+            </button>
+            <button
+              onClick={dismissInstall}
+              aria-label="Cerrar"
+              className="w-6 h-6 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex-shrink-0"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M1 1l8 8M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2.5 mb-7 anim-up-2">
           {/* Primary: Nueva salida — pill with button-in-button */}
           <button
