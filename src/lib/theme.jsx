@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 const ThemeCtx = createContext(null)
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => localStorage.getItem('splitya_theme') || 'light')
+  const [theme, setTheme] = useState(() => localStorage.getItem('splitya_theme') || 'dark')
 
   useEffect(() => {
     if (theme === 'dark') {
