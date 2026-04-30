@@ -31,7 +31,10 @@ export default function HomeScreen({ user, onSelectGroup, pendingJoin, onClearPe
     || window.navigator.standalone === true
 
   useEffect(() => {
-    const handler = (e) => { e.preventDefault(); setInstallPrompt(e) }
+    if (window.__pwaInstallPrompt) {
+      setInstallPrompt(window.__pwaInstallPrompt)
+    }
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e); window.__pwaInstallPrompt = e }
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
