@@ -480,6 +480,27 @@ function GroupCard({ group, userId, onSelect, isPinned, onTogglePin, archived })
   )
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function resizeToSquare(file, size = 160) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')
+      const min = Math.min(img.width, img.height)
+      const sx = (img.width - min) / 2
+      const sy = (img.height - min) / 2
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size)
+      resolve(canvas.toDataURL('image/jpeg', 0.82))
+    }
+    img.onerror = reject
+    img.src = URL.createObjectURL(file)
+  })
+}
+
 // ─── Profile Modal ────────────────────────────────────────────────────────────
 
 function ProfileModal({ open, onClose, user }) {
@@ -505,12 +526,12 @@ function ProfileModal({ open, onClose, user }) {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
-    const ext = file.name.split('.').pop()
-    const path = `${user.id}.${ext}`
-    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
-    if (error) { toast.error('No se pudo subir la foto'); setUploading(false); return }
-    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-    setAvatarUrl(data.publicUrl + '?t=' + Date.now())
+    try {
+      const dataUrl = await resizeToSquare(file, 160)
+      setAvatarUrl(dataUrl)
+    } catch {
+      toast.error('No se pudo procesar la foto')
+    }
     setUploading(false)
   }
 
