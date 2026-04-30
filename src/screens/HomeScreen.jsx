@@ -482,10 +482,12 @@ function GroupCard({ group, userId, onSelect, isPinned, onTogglePin, archived })
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function resizeToSquare(file, size = 160) {
+function resizeToSquareBlob(file, size = 192) {
   return new Promise((resolve, reject) => {
     const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
     img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
       const canvas = document.createElement('canvas')
       canvas.width = size
       canvas.height = size
@@ -494,10 +496,10 @@ function resizeToSquare(file, size = 160) {
       const sx = (img.width - min) / 2
       const sy = (img.height - min) / 2
       ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size)
-      resolve(canvas.toDataURL('image/jpeg', 0.82))
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/jpeg', 0.82)
     }
-    img.onerror = reject
-    img.src = URL.createObjectURL(file)
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('load failed')) }
+    img.src = objectUrl
   })
 }
 
@@ -526,11 +528,22 @@ function ProfileModal({ open, onClose, user }) {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
+    // Show local preview instantly
+    const previewUrl = URL.createObjectURL(file)
+    setAvatarUrl(previewUrl)
     try {
-      const dataUrl = await resizeToSquare(file, 160)
-      setAvatarUrl(dataUrl)
-    } catch {
-      toast.error('No se pudo procesar la foto')
+      const blob = await resizeToSquareBlob(file, 192)
+      const fileName = `${user.id}.jpg`
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, blob, { upsert: true, contentType: 'image/jpeg' })
+      if (uploadError) throw uploadError
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      setAvatarUrl(data.publicUrl)
+    } catch (err) {
+      console.error(err)
+      setAvatarUrl(user?.avatar_url || null)
+      toast.error('No se pudo subir la foto')
     }
     setUploading(false)
   }
