@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { calcSettlements } from '../lib/settlements'
 import { fmt, genInviteCode, AVATAR_COLORS } from '../lib/utils'
@@ -146,7 +146,7 @@ export default function HomeScreen({ user, onSelectGroup, pendingJoin, onClearPe
               className="flex items-center gap-2.5 px-2 py-1 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
             >
               <span className="text-sm text-stone-700 dark:text-stone-300 font-medium hidden sm:inline">{user.display_name}</span>
-              <Avatar name={user.display_name} color={user.avatar_color} size="sm" />
+              <Avatar name={user.display_name} color={user.avatar_color} src={user.avatar_url} size="sm" />
             </button>
           </div>
         </div>
@@ -372,7 +372,7 @@ function GroupCard({ group, userId, onSelect, isPinned, onTogglePin, archived })
   useEffect(() => {
     const load = async () => {
       const [{ data: membersData }, { data: expData }] = await Promise.all([
-        supabase.from('group_members').select('profiles(id, display_name, avatar_color)').eq('group_id', group.id),
+        supabase.from('group_members').select('profiles(id, display_name, avatar_color, avatar_url)').eq('group_id', group.id),
         supabase.from('expenses').select('amount, paid_by, split_type, split_data').eq('group_id', group.id),
       ])
       const members = (membersData || []).map(r => r.profiles).filter(Boolean)
@@ -402,7 +402,7 @@ function GroupCard({ group, userId, onSelect, isPinned, onTogglePin, archived })
             <div className="flex -space-x-2 flex-shrink-0">
               {stats.members.slice(0, 3).map(m => (
                 <div key={m.id} className="ring-2 ring-white dark:ring-stone-900 rounded-full">
-                  <Avatar name={m.display_name} color={m.avatar_color} size="md" />
+                  <Avatar name={m.display_name} color={m.avatar_color} src={m.avatar_url} size="md" />
                 </div>
               ))}
               {stats.members.length > 3 && (
@@ -486,16 +486,33 @@ function ProfileModal({ open, onClose, user }) {
   const [name, setName]   = useState(user?.display_name || '')
   const [color, setColor] = useState(user?.avatar_color || AVATAR_COLORS[0])
   const [alias, setAlias] = useState(user?.payment_alias || '')
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null)
+  const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [logoutConfirm, setLogoutConfirm] = useState(false)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     if (open) {
       setName(user?.display_name || '')
       setColor(user?.avatar_color || AVATAR_COLORS[0])
       setAlias(user?.payment_alias || '')
+      setAvatarUrl(user?.avatar_url || null)
     }
   }, [open])
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `${user.id}.${ext}`
+    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+    if (error) { toast.error('No se pudo subir la foto'); setUploading(false); return }
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+    setAvatarUrl(data.publicUrl + '?t=' + Date.now())
+    setUploading(false)
+  }
 
   const save = async () => {
     if (!name.trim()) { toast.error('El nombre no puede estar vacío'); return }
@@ -504,6 +521,7 @@ function ProfileModal({ open, onClose, user }) {
       display_name: name.trim(),
       avatar_color: color,
       payment_alias: alias.trim() || null,
+      avatar_url: avatarUrl || null,
     }).eq('id', user.id)
     setSaving(false)
     if (error) { toast.error('No se pudo guardar'); return }
@@ -522,10 +540,23 @@ function ProfileModal({ open, onClose, user }) {
       <Modal open={open} onClose={onClose} title="Mi perfil" subtitle="Editá tu nombre, color y alias de pago">
         <div className="space-y-5">
           <div className="flex items-center gap-3 p-3 bg-stone-50 dark:bg-stone-800 rounded-2xl">
-            <Avatar name={name || user?.display_name} color={color} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="relative group flex-shrink-0"
+            >
+              <Avatar name={name || user?.display_name} color={color} src={avatarUrl} />
+              <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                {uploading
+                  ? <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" opacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round"/></svg>
+                  : <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M3 13l4-4 3 3 4-5 3 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="2" y="4" width="16" height="14" rx="2" stroke="white" strokeWidth="1.5"/><circle cx="7" cy="9" r="1.5" fill="white"/></svg>
+                }
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            </button>
             <div>
               <p className="font-medium text-stone-950 dark:text-stone-50 tracking-tight">{name || user?.display_name}</p>
-              <p className="text-xs text-stone-500 dark:text-stone-400">Vista previa</p>
+              <p className="text-xs text-stone-500 dark:text-stone-400">Tocá la foto para cambiarla</p>
             </div>
           </div>
 

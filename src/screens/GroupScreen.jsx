@@ -28,7 +28,7 @@ export default function GroupScreen({ groupId, user, onBack }) {
   const fetchMembers = useCallback(async () => {
     const { data } = await supabase
       .from('group_members')
-      .select('user_id, joined_at, profiles(id, display_name, avatar_color, payment_alias)')
+      .select('user_id, joined_at, profiles(id, display_name, avatar_color, avatar_url, payment_alias)')
       .eq('group_id', groupId)
     setMemberRows(data || [])
     setMembers((data || []).map(r => r.profiles).filter(Boolean))
@@ -285,7 +285,7 @@ function ActivityTab({ memberRows, expenses, members }) {
           <div key={`join-${ev.userId}-${i}`} className="flex gap-3 py-3 border-b border-stone-100 dark:border-stone-800 last:border-0">
             <div className="w-9 h-9 flex items-center justify-center flex-shrink-0 mt-0.5">
               {ev.profile
-                ? <Avatar name={ev.profile.display_name} color={ev.profile.avatar_color} size="sm" />
+                ? <Avatar name={ev.profile.display_name} color={ev.profile.avatar_color} src={ev.profile.avatar_url} size="sm" />
                 : <div className="w-8 h-8 rounded-full bg-stone-100 dark:bg-stone-800" />
               }
             </div>
@@ -371,7 +371,7 @@ function MembersTab({ group, members, user, isAdmin, onRemoveMember, onLeaveGrou
           <div className="bg-white dark:bg-stone-900 rounded-[1.35rem] overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,1)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
             {members.map((m, i) => (
               <div key={m.id} className={`flex items-center gap-3 px-4 py-3.5 ${i < members.length - 1 ? 'border-b border-stone-100 dark:border-stone-800' : ''}`}>
-                <Avatar name={m.display_name} color={m.avatar_color} />
+                <Avatar name={m.display_name} color={m.avatar_color} src={m.avatar_url} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-stone-950 dark:text-stone-50 truncate tracking-tight">{m.display_name}</p>
@@ -842,7 +842,7 @@ function ResultsTab({ members, expenses, userId, group, user }) {
               return (
                 <div key={m.id} className={`px-4 py-3.5 ${i < members.length - 1 ? 'border-b border-stone-100 dark:border-stone-800' : ''}`}>
                   <div className="flex items-center gap-3">
-                    <Avatar name={m.display_name} color={m.avatar_color} size="sm" />
+                    <Avatar name={m.display_name} color={m.avatar_color} src={m.avatar_url} size="sm" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline justify-between gap-2">
                         <p className="font-medium text-stone-950 dark:text-stone-50 truncate tracking-tight text-sm">

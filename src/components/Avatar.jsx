@@ -11,7 +11,7 @@ const monogram = (name = '?') => {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
 }
 
-export default function Avatar({ name = '?', color, size = 'md', square = false }) {
+export default function Avatar({ name = '?', color, src, size = 'md', square = false }) {
   const sz = {
     xs: 'w-6 h-6 text-[10px]',
     sm: 'w-8 h-8 text-[11px]',
@@ -19,6 +19,14 @@ export default function Avatar({ name = '?', color, size = 'md', square = false 
     lg: 'w-12 h-12 text-base',
     xl: 'w-16 h-16 text-xl',
   }[size]
+
+  if (src) {
+    return (
+      <div className={`${sz} ${square ? 'rounded-xl' : 'rounded-full'} overflow-hidden flex-shrink-0 select-none`}>
+        <img src={src} alt={name} className="w-full h-full object-cover" />
+      </div>
+    )
+  }
 
   const bg = color || `hsl(${hueFromString(name)} 65% 92%)`
   const fg = color
