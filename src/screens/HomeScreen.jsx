@@ -560,7 +560,7 @@ function ProfileModal({ open, onClose, user }) {
       avatar_url: avatarUrl || null,
     }).eq('id', user.id)
     setSaving(false)
-    if (error) { toast.error('No se pudo guardar'); return }
+    if (error) { toast.error(error.message || 'No se pudo guardar'); console.error('profiles update error:', error); return }
     toast.success('Perfil actualizado')
     onClose()
     setTimeout(() => window.location.reload(), 400)
@@ -649,7 +649,7 @@ function ProfileModal({ open, onClose, user }) {
 
           <div className="flex gap-2">
             <button onClick={onClose} className="flex-1 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 font-medium hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">Cancelar</button>
-            <button onClick={save} disabled={saving} className="flex-1 py-3 rounded-2xl bg-brick-600 dark:bg-brick-500 text-white font-medium hover:bg-brick-700 dark:hover:bg-brick-600 active:scale-[0.99] transition-all disabled:opacity-30">
+            <button onClick={save} disabled={saving || uploading} className="flex-1 py-3 rounded-2xl bg-brick-600 dark:bg-brick-500 text-white font-medium hover:bg-brick-700 dark:hover:bg-brick-600 active:scale-[0.99] transition-all disabled:opacity-30">
               {saving ? 'Guardando…' : 'Guardar'}
             </button>
           </div>
