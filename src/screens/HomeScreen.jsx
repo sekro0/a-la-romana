@@ -551,16 +551,27 @@ function ProfileModal({ open, onClose, user }) {
                   style={{ backgroundColor: c }}
                 />
               ))}
+              <label
+                aria-label="Color personalizado"
+                className={`w-8 h-8 rounded-full flex-shrink-0 cursor-pointer overflow-hidden relative transition-all duration-300 ease-spring hover:scale-105 ${
+                  !AVATAR_COLORS.includes(color)
+                    ? 'ring-2 ring-offset-2 ring-stone-950 dark:ring-stone-50 dark:ring-offset-stone-900 scale-110'
+                    : 'opacity-50 hover:opacity-90'
+                }`}
+                style={{ background: !AVATAR_COLORS.includes(color) ? color : 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)' }}
+              >
+                <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer" value={color} onChange={e => setColor(e.target.value)} />
+              </label>
             </div>
           </div>
 
           <div>
             <label className="block text-xs uppercase tracking-wider font-medium text-stone-500 dark:text-stone-400 mb-2">
-              Alias Mercado Pago (opcional)
+              Alias / CBU (opcional)
             </label>
             <input
               className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl px-4 py-3 text-stone-950 dark:text-stone-50 font-medium focus:border-stone-950 dark:focus:border-stone-400 focus:bg-white dark:focus:bg-stone-700 transition-colors"
-              placeholder="nombre.apellido"
+              placeholder="alias"
               value={alias}
               onChange={e => setAlias(e.target.value)}
               type="text"
