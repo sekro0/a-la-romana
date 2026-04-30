@@ -520,7 +520,9 @@ function ProfileModal({ open, onClose, user }) {
       setName(user?.display_name || '')
       setColor(user?.avatar_color || AVATAR_COLORS[0])
       setAlias(user?.payment_alias || '')
-      setAvatarUrl(user?.avatar_url || null)
+      // Ignore old base64 values that can't be saved to the DB
+      const url = user?.avatar_url || null
+      setAvatarUrl(url?.startsWith('data:') ? null : url)
     }
   }, [open])
 
