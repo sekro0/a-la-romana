@@ -27,6 +27,8 @@ export default function HomeScreen({ user, onSelectGroup, pendingJoin, onClearPe
   const [installDismissed, setInstallDismissed] = useState(
     () => localStorage.getItem('splitya_install_dismissed') === '1'
   )
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true
 
   useEffect(() => {
     const handler = (e) => { e.preventDefault(); setInstallPrompt(e) }
@@ -35,10 +37,13 @@ export default function HomeScreen({ user, onSelectGroup, pendingJoin, onClearPe
   }, [])
 
   const handleInstall = async () => {
-    if (!installPrompt) return
-    installPrompt.prompt()
-    const { outcome } = await installPrompt.userChoice
-    if (outcome === 'accepted') setInstallPrompt(null)
+    if (installPrompt) {
+      installPrompt.prompt()
+      const { outcome } = await installPrompt.userChoice
+      if (outcome === 'accepted') setInstallPrompt(null)
+    } else {
+      toast.info('Hacé click en el ícono del monitor (↓) en la barra de direcciones de Chrome')
+    }
   }
 
   const dismissInstall = () => {
@@ -158,7 +163,7 @@ export default function HomeScreen({ user, onSelectGroup, pendingJoin, onClearPe
       </header>
 
       <div className="px-5 max-w-2xl mx-auto pb-12">
-        {installPrompt && !installDismissed && (
+        {!isStandalone && !installDismissed && (
           <div className="flex items-center gap-3 mb-4 px-4 py-3 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 anim-up-1">
             <div className="w-8 h-8 rounded-xl bg-brick-600 flex items-center justify-center flex-shrink-0">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
