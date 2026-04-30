@@ -4,6 +4,7 @@ import { calcSettlements } from '../lib/settlements'
 import { fmt, fmtDate, expCategory, CATEGORIES } from '../lib/utils'
 import Avatar from '../components/Avatar'
 import Modal from '../components/Modal'
+import ConfirmModal from '../components/ConfirmModal'
 import ExpenseForm from '../components/ExpenseForm'
 import { toast } from '../components/Toast'
 import { ThemeToggle } from '../lib/theme'
@@ -15,6 +16,7 @@ export default function GroupScreen({ groupId, user, onBack }) {
   const [expenses, setExpenses]   = useState([])
   const [tab, setTab]             = useState('gastos')
   const [loading, setLoading]     = useState(true)
+  const [confirm, setConfirm]     = useState(null)
 
   const fetchExpenses = useCallback(async () => {
     const { data } = await supabase
@@ -51,42 +53,63 @@ export default function GroupScreen({ groupId, user, onBack }) {
 
   const isAdmin = group?.created_by === user.id
 
-  const archiveGroup = async () => {
-    if (!confirm('¿Archivar este grupo? Lo podés ver en "Archivados" pero no se podrán agregar gastos.')) return
-    const { error } = await supabase.from('groups').update({ archived: true }).eq('id', groupId)
-    if (error) { toast.error('No se pudo archivar'); return }
-    toast.success('Grupo archivado')
-    onBack()
-  }
+  const archiveGroup = () => setConfirm({
+    title: 'Archivar grupo',
+    message: 'Lo podés ver en "Archivados" pero no se podrán agregar gastos.',
+    confirmLabel: 'Archivar',
+    danger: true,
+    onConfirm: async () => {
+      const { error } = await supabase.from('groups').update({ archived: true }).eq('id', groupId)
+      if (error) { toast.error('No se pudo archivar'); return }
+      toast.success('Grupo archivado')
+      onBack()
+    },
+  })
 
-  const closeCycle = async () => {
-    if (!confirm('¿Cerrar el ciclo actual? Los gastos se archivarán y el balance vuelve a cero.')) return
-    const { error } = await supabase.from('expenses').update({ archived: true }).eq('group_id', groupId).eq('archived', false)
-    if (error) { toast.error('No se pudo cerrar el ciclo'); return }
-    toast.success('Ciclo cerrado — balance reiniciado')
-    fetchExpenses()
-  }
+  const closeCycle = () => setConfirm({
+    title: 'Cerrar ciclo',
+    message: 'Los gastos se archivarán y el balance vuelve a cero.',
+    confirmLabel: 'Cerrar ciclo',
+    danger: false,
+    onConfirm: async () => {
+      const { error } = await supabase.from('expenses').update({ archived: true }).eq('group_id', groupId).eq('archived', false)
+      if (error) { toast.error('No se pudo cerrar el ciclo'); return }
+      toast.success('Ciclo cerrado — balance reiniciado')
+      fetchExpenses()
+    },
+  })
 
-  const removeMember = async (memberId) => {
+  const removeMember = (memberId) => {
     const member = members.find(m => m.id === memberId)
-    if (!confirm(`¿Expulsar a ${member?.display_name || 'este miembro'} del grupo?`)) return
-    const { error } = await supabase.from('group_members').delete()
-      .eq('group_id', groupId).eq('user_id', memberId)
-    if (error) { toast.error('No se pudo expulsar al miembro'); return }
-    toast.success(`${member?.display_name || 'Miembro'} eliminado`)
+    setConfirm({
+      title: `Expulsar a ${member?.display_name || 'este miembro'}`,
+      message: 'Esta persona no podrá ver los gastos del grupo.',
+      confirmLabel: 'Expulsar',
+      danger: true,
+      onConfirm: async () => {
+        const { error } = await supabase.from('group_members').delete()
+          .eq('group_id', groupId).eq('user_id', memberId)
+        if (error) { toast.error('No se pudo expulsar al miembro'); return }
+        toast.success(`${member?.display_name || 'Miembro'} eliminado`)
+      },
+    })
   }
 
-  const leaveGroup = async () => {
-    const msg = isAdmin
-      ? '¿Seguro que querés salir? Sos el admin y no podrás transferir ese rol.'
-      : '¿Seguro que querés salir del grupo?'
-    if (!confirm(msg)) return
-    const { error } = await supabase.from('group_members').delete()
-      .eq('group_id', groupId).eq('user_id', user.id)
-    if (error) { toast.error('No se pudo salir del grupo'); return }
-    toast.success('Saliste del grupo')
-    onBack()
-  }
+  const leaveGroup = () => setConfirm({
+    title: 'Salir del grupo',
+    message: isAdmin
+      ? 'Sos el admin y no podrás transferir ese rol.'
+      : '¿Seguro que querés salir del grupo?',
+    confirmLabel: 'Salir',
+    danger: true,
+    onConfirm: async () => {
+      const { error } = await supabase.from('group_members').delete()
+        .eq('group_id', groupId).eq('user_id', user.id)
+      if (error) { toast.error('No se pudo salir del grupo'); return }
+      toast.success('Saliste del grupo')
+      onBack()
+    },
+  })
 
   const total = expenses.reduce((s, e) => s + e.amount, 0)
   const { txns } = loading ? { txns: [] } : calcSettlements(members, expenses)
@@ -164,6 +187,16 @@ export default function GroupScreen({ groupId, user, onBack }) {
         {tab === 'actividad' && <ActivityTab memberRows={memberRows} expenses={expenses} members={members} />}
         {tab === 'miembros'  && <MembersTab group={group} members={members} user={user} isAdmin={isAdmin} onRemoveMember={removeMember} onLeaveGroup={leaveGroup} onArchiveGroup={archiveGroup} onCloseCycle={closeCycle} />}
       </main>
+
+      <ConfirmModal
+        open={!!confirm}
+        title={confirm?.title}
+        message={confirm?.message}
+        confirmLabel={confirm?.confirmLabel}
+        danger={confirm?.danger}
+        onConfirm={() => { confirm?.onConfirm(); setConfirm(null) }}
+        onCancel={() => setConfirm(null)}
+      />
     </div>
   )
 }
@@ -400,6 +433,7 @@ function ExpensesTab({ members, expenses, user, groupId, onRefresh, isAdmin }) {
   const [editing, setEditing]     = useState(null)
   const [groupByDay, setGroupByDay] = useState(false)
   const [catFilter, setCatFilter] = useState(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   const total = expenses.reduce((s, e) => s + e.amount, 0)
 
@@ -422,9 +456,11 @@ function ExpensesTab({ members, expenses, user, groupId, onRefresh, isAdmin }) {
     onRefresh()
   }
 
-  const deleteExpense = async (id) => {
-    if (!confirm('¿Eliminar este gasto?')) return
-    const { error } = await supabase.from('expenses').delete().eq('id', id)
+  const deleteExpense = (id) => setDeleteConfirm(id)
+
+  const doDelete = async () => {
+    const { error } = await supabase.from('expenses').delete().eq('id', deleteConfirm)
+    setDeleteConfirm(null)
     if (error) { toast.error('No se pudo eliminar'); return }
     toast.success('Gasto eliminado')
     onRefresh()
@@ -664,6 +700,16 @@ function ExpensesTab({ members, expenses, user, groupId, onRefresh, isAdmin }) {
           onClose={() => { setFormOpen(false); setEditing(null) }}
         />
       </Modal>
+
+      <ConfirmModal
+        open={!!deleteConfirm}
+        title="Eliminar gasto"
+        message="Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        danger
+        onConfirm={doDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   )
 }
