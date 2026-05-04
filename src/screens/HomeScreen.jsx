@@ -25,8 +25,10 @@ export default function HomeScreen({ user, onSelectGroup, pendingJoin, onClearPe
   })
   const [installPrompt, setInstallPrompt] = useState(null)
   const [installCollapsed, setInstallCollapsed] = useState(false)
+  const [showIOSHint, setShowIOSHint] = useState(false)
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches
     || window.navigator.standalone === true
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
 
   useEffect(() => {
     if (window.__pwaInstallPrompt) {
@@ -38,7 +40,9 @@ export default function HomeScreen({ user, onSelectGroup, pendingJoin, onClearPe
   }, [])
 
   const handleInstall = async () => {
-    if (installPrompt) {
+    if (isIOS) {
+      setShowIOSHint(true)
+    } else if (installPrompt) {
       installPrompt.prompt()
       const { outcome } = await installPrompt.userChoice
       if (outcome === 'accepted') setInstallPrompt(null)
@@ -335,6 +339,50 @@ export default function HomeScreen({ user, onSelectGroup, pendingJoin, onClearPe
       </Modal>
 
       <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} user={user} />
+
+      {/* iOS install instructions */}
+      {showIOSHint && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center animate-fade-in">
+          <div className="absolute inset-0 bg-stone-950/50 backdrop-blur-[2px]" onClick={() => setShowIOSHint(false)} />
+          <div className="relative bg-white dark:bg-stone-900 w-full rounded-t-[28px] shadow-2xl border-t border-stone-200/60 dark:border-stone-800/60 px-6 pt-6 pb-10 animate-slide-up">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-semibold text-stone-950 dark:text-stone-50 text-[17px] tracking-tight">Instalá la app</h3>
+              <button onClick={() => setShowIOSHint(false)} className="w-7 h-7 flex items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800 text-stone-500">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2v13M8 7l4-5 4 5" stroke="#3b82f6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#3b82f6" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-stone-950 dark:text-stone-50">Tocá el botón Compartir</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">El ícono de la flecha hacia arriba en la barra de Safari</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" stroke="#b54f2e" strokeWidth="1.8"/><path d="M12 8v8M8 12h8" stroke="#b54f2e" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-stone-950 dark:text-stone-50">Seleccioná "Agregar a inicio"</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Deslizá hacia abajo en el menú y tocá esa opción</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-stone-950 dark:text-stone-50">Tocá "Agregar"</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">La app aparece en tu pantalla de inicio</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Modal open={joinOpen} onClose={() => setJoinOpen(false)} title="Unirme a un grupo" subtitle="Pediles el código a quien creó el grupo">
         <div className="space-y-5">
